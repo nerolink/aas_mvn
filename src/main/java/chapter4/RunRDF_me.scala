@@ -35,7 +35,8 @@ object RunRDF_me {
 //    run.simpleDecisionTree(trainData, testData)
 //    run.randomClassifier(trainData, testData)
 //    run.evaluate(trainData,testData)
-    run.evaluateCategorical(trainData, testData)
+//    run.evaluateCategorical(trainData, testData)
+    run.evaluateForest(trainData, testData)
   }
 }
 
@@ -216,8 +217,8 @@ class RunRDF(private val spark: SparkSession) {
 
     val pipeline=new Pipeline().setStages(Array(assembler, indexer, classifier))
     val paramGrid=new ParamGridBuilder()
-      .addGrid(classifier.minInfoGain,Seq(0.0,0.5))
-      .addGrid(classifier.numTrees,Seq(1,10))
+      .addGrid(classifier.minInfoGain,Seq(0.0))
+      .addGrid(classifier.numTrees,Seq(1))
       .build()
 
     val multiClassEval= new MulticlassClassificationEvaluator()
@@ -236,5 +237,14 @@ class RunRDF(private val spark: SparkSession) {
     val bestModel = validatorModels.bestModel
 
     val forestModel=bestModel.asInstanceOf[PipelineModel].stages.last.asInstanceOf[RandomForestClassificationModel]
+
+    println(forestModel.extractParamMap())
+    println(forestModel.numTrees)
+
+    forestModel.featureImportances.toArray.zip(inputCols).sorted.reverse.foreach(println)
+    val testAcc=multiClassEval.evaluate(bestModel.transform(unencodeTestData))
+    println(testAcc)
+    bestModel.transform(unencodeTestData.drop("Cover_Type")).select("prediction").show()
+
   }
 }
