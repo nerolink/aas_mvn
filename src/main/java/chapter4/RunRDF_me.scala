@@ -239,12 +239,12 @@ class RunRDF(private val spark: SparkSession) {
     val forestModel=bestModel.asInstanceOf[PipelineModel].stages.last.asInstanceOf[RandomForestClassificationModel]
 
     println(forestModel.extractParamMap())
-    println(forestModel.numTrees)
+    println(forestModel.getNumTrees)
 
     forestModel.featureImportances.toArray.zip(inputCols).sorted.reverse.foreach(println)
     val testAcc=multiClassEval.evaluate(bestModel.transform(unencodeTestData))
     println(testAcc)
     bestModel.transform(unencodeTestData.drop("Cover_Type")).select("prediction").show()
-
   }
+
 }
